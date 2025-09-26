@@ -7,6 +7,67 @@ body {
     padding: 0;
 }
 
+/* Barra de autenticación */
+.auth-bar {
+    background: #007bff;
+    color: white;
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.auth-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-status {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.flag {
+    font-size: 1.2rem;
+}
+
+.auth-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-actions .btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.auth-actions .btn-primary {
+    background: #4285f4;
+    border-color: #4285f4;
+}
+
+.auth-actions .btn-primary:hover {
+    background: #3367d6;
+    border-color: #3367d6;
+}
+
+.auth-actions .btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.auth-actions .btn-outline-danger:hover {
+    background: #dc3545;
+    border-color: #dc3545;
+}
+
 .container-fluid {
     height: 100vh;
     padding: 0;
@@ -71,26 +132,10 @@ body {
 
 /* Contenido Principal */
 .main-content {
-    padding: 40px;
+    padding: 20px;
     background-color: #ffffff;
     height: 100vh;
     overflow-y: auto;
-}
-
-.main-title {
-    color: #333;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    text-align: center;
-}
-
-.subtitle {
-    color: #666;
-    font-size: 1.1rem;
-    font-weight: 400;
-    margin-bottom: 30px;
-    text-align: center;
 }
 
 .board-header h3 {

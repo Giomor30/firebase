@@ -11,6 +11,7 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 // Verificar conexión con Firebase
 console.log('🔧 Configuración de Firebase:', firebaseConfig);
@@ -31,9 +32,10 @@ db.collection('test').doc('connection').get()
     });
 
 // Variables globales
-let currentBoard = 'Tablero 1';
-let boards = ['Tablero 1'];
+let currentBoard = null;
+let boards = [];
 let tasks = [];
+let currentUser = null;
 
 // Elementos del DOM
 const newTaskInput = document.getElementById('newTaskInput');
@@ -44,12 +46,30 @@ const pendingTasksContainer = document.getElementById('pendingTasks');
 const completedTasksContainer = document.getElementById('completedTasks');
 const currentBoardTitle = document.getElementById('currentBoardTitle');
 
+// Elementos de autenticación
+const authStatus = document.getElementById('authStatus');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar con datos de ejemplo
-    initializeApp();
+    // Inicializar autenticación
+    initializeAuth();
     setupEventListeners();
+    
+    // Inicializar con funciones deshabilitadas
+    disableAppFunctions();
 });
+
+// Configurar listeners de autenticación
+function setupAuthListeners() {
+    if (loginBtn) {
+        loginBtn.addEventListener('click', signInWithGoogle);
+    }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', signOut);
+    }
+}
 
 async function initializeApp() {
     console.log('🚀 Inicializando aplicación...');
@@ -91,6 +111,9 @@ function setupEventListeners() {
             addBoard();
         }
     });
+
+    // Configurar listeners de autenticación
+    setupAuthListeners();
 }
 
 // Funciones de tareas
@@ -142,6 +165,13 @@ function deleteTask(taskId) {
 }
 
 function renderTasks() {
+    if (!currentBoard) {
+        // No hay tablero seleccionado
+        pendingTasksContainer.innerHTML = '<div class="text-muted text-center py-3">Selecciona un tablero</div>';
+        completedTasksContainer.innerHTML = '<div class="text-muted text-center py-3">Selecciona un tablero</div>';
+        return;
+    }
+    
     const pendingTasks = tasks.filter(t => !t.completed && t.board === currentBoard);
     const completedTasks = tasks.filter(t => t.completed && t.board === currentBoard);
 
@@ -263,6 +293,11 @@ function renderBoards() {
         }
     });
     
+    // Actualizar el título del tablero actual
+    if (currentBoardTitle) {
+        currentBoardTitle.textContent = currentBoard || 'Selecciona un tablero';
+    }
+    
     console.log(`📋 Tableros renderizados: ${boards.length}`);
 }
 
@@ -276,15 +311,21 @@ async function loadDataFromFirebase() {
             throw new Error('Firestore no está inicializado');
         }
         
-        // Cargar tableros
-        console.log('📋 Cargando tableros...');
-        const boardsSnapshot = await db.collection('boards').get();
-        boards = ['Tablero 1']; // Siempre incluir el tablero por defecto
+        if (!currentUser) {
+            throw new Error('Usuario no autenticado');
+        }
+        
+        const userId = currentUser.uid;
+        
+        // Cargar tableros del usuario
+        console.log('📋 Cargando tableros del usuario...');
+        const boardsSnapshot = await db.collection('users').doc(userId).collection('boards').get();
+        boards = [];
         
         if (!boardsSnapshot.empty) {
             boardsSnapshot.forEach(doc => {
                 const boardData = doc.data();
-                if (boardData.name && !boards.includes(boardData.name)) {
+                if (boardData.name) {
                     boards.push(boardData.name);
                 }
             });
@@ -292,9 +333,9 @@ async function loadDataFromFirebase() {
         
         console.log('📋 Tableros cargados:', boards);
         
-        // Cargar tareas
-        console.log('✅ Cargando tareas...');
-        const tasksSnapshot = await db.collection('tasks').get();
+        // Cargar tareas del usuario
+        console.log('✅ Cargando tareas del usuario...');
+        const tasksSnapshot = await db.collection('users').doc(userId).collection('tasks').get();
         tasks = [];
         
         if (!tasksSnapshot.empty) {
@@ -304,7 +345,7 @@ async function loadDataFromFirebase() {
                     id: doc.id,
                     text: taskData.text || 'Tarea sin texto',
                     completed: taskData.completed || false,
-                    board: taskData.board || 'Tablero 1',
+                    board: taskData.board || '',
                     createdAt: taskData.createdAt ? taskData.createdAt.toDate() : new Date()
                 });
             });
@@ -312,26 +353,18 @@ async function loadDataFromFirebase() {
         
         console.log('✅ Tareas cargadas:', tasks.length);
         
-        // Si no hay datos, usar datos de ejemplo
-        if (tasks.length === 0 && boards.length === 1) {
-            console.log('📝 No hay datos en Firebase, usando datos locales...');
-            tasks = [
-                { id: '1', text: 'Tarea de ejemplo 1', completed: false, board: 'Tablero 1', createdAt: new Date() },
-                { id: '2', text: 'Tarea de ejemplo 2', completed: false, board: 'Tablero 1', createdAt: new Date() }
-            ];
+        // Si no hay tableros, crear uno por defecto
+        if (boards.length === 0) {
+            const defaultBoard = 'Mi Primer Tablero';
+            boards.push(defaultBoard);
+            currentBoard = defaultBoard;
+            await saveBoardToFirebase(defaultBoard);
+        } else {
+            currentBoard = boards[0];
         }
         
     } catch (error) {
         console.error('❌ Error cargando datos desde Firebase:', error);
-        console.log('🔄 Usando datos locales como fallback...');
-        
-        // Usar datos locales como fallback
-        tasks = [
-            { id: '1', text: 'Tarea local 1', completed: false, board: 'Tablero 1', createdAt: new Date() },
-            { id: '2', text: 'Tarea local 2', completed: false, board: 'Tablero 1', createdAt: new Date() }
-        ];
-        boards = ['Tablero 1'];
-        
         throw error;
     }
 }
@@ -351,7 +384,13 @@ async function createSampleData() {
 
 async function saveTaskToFirebase(task) {
     try {
-        await db.collection('tasks').doc(task.id).set(task);
+        if (!currentUser) {
+            console.log('❌ Usuario no autenticado, no se puede guardar');
+            return;
+        }
+        
+        const userId = currentUser.uid;
+        await db.collection('users').doc(userId).collection('tasks').doc(task.id).set(task);
         console.log('✅ Tarea guardada en Firebase:', task.text);
     } catch (error) {
         console.error('❌ Error guardando tarea en Firebase:', error.message);
@@ -361,34 +400,191 @@ async function saveTaskToFirebase(task) {
 
 async function updateTaskInFirebase(task) {
     try {
-        await db.collection('tasks').doc(task.id).update({
+        if (!currentUser) {
+            console.log('❌ Usuario no autenticado, no se puede actualizar');
+            return;
+        }
+        
+        const userId = currentUser.uid;
+        await db.collection('users').doc(userId).collection('tasks').doc(task.id).update({
             completed: task.completed
         });
-        console.log('Tarea actualizada en Firebase');
+        console.log('✅ Tarea actualizada en Firebase');
     } catch (error) {
-        console.log('Firebase no disponible, actualizando localmente');
+        console.error('❌ Error actualizando tarea en Firebase:', error.message);
+        console.log('💾 Actualizando localmente únicamente');
     }
 }
 
 async function deleteTaskFromFirebase(taskId) {
     try {
-        await db.collection('tasks').doc(taskId).delete();
-        console.log('Tarea eliminada de Firebase');
+        if (!currentUser) {
+            console.log('❌ Usuario no autenticado, no se puede eliminar');
+            return;
+        }
+        
+        const userId = currentUser.uid;
+        await db.collection('users').doc(userId).collection('tasks').doc(taskId).delete();
+        console.log('✅ Tarea eliminada de Firebase');
     } catch (error) {
-        console.log('Firebase no disponible, eliminando localmente');
+        console.error('❌ Error eliminando tarea en Firebase:', error.message);
+        console.log('💾 Eliminando localmente únicamente');
     }
 }
 
 async function saveBoardToFirebase(boardName) {
     try {
-        await db.collection('boards').doc(boardName).set({
+        if (!currentUser) {
+            console.log('❌ Usuario no autenticado, no se puede guardar');
+            return;
+        }
+        
+        const userId = currentUser.uid;
+        await db.collection('users').doc(userId).collection('boards').doc(boardName).set({
             name: boardName,
             createdAt: new Date()
         });
-        console.log('Tablero guardado en Firebase');
+        console.log('✅ Tablero guardado en Firebase');
     } catch (error) {
-        console.log('Firebase no disponible, guardando localmente');
+        console.error('❌ Error guardando tablero en Firebase:', error.message);
+        console.log('💾 Guardando localmente únicamente');
     }
+}
+
+// Funciones de autenticación
+function initializeAuth() {
+    console.log('🔐 Inicializando autenticación...');
+    
+    // Escuchar cambios en el estado de autenticación
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // Usuario autenticado
+            currentUser = user;
+            updateAuthUI(true, user);
+            console.log('✅ Usuario autenticado:', user.displayName);
+            
+            // Cargar datos del usuario
+            initializeApp();
+        } else {
+            // Usuario no autenticado
+            currentUser = null;
+            updateAuthUI(false);
+            console.log('❌ Usuario no autenticado');
+            
+            // Mostrar mensaje de login
+            showLoginMessage();
+        }
+    });
+}
+
+function updateAuthUI(isAuthenticated, user = null) {
+    if (isAuthenticated && user) {
+        // Usuario autenticado
+        authStatus.textContent = `Hola, ${user.displayName || user.email}`;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        
+        // Habilitar funciones
+        enableAppFunctions();
+    } else {
+        // Usuario no autenticado
+        authStatus.textContent = 'No autenticado';
+        loginBtn.style.display = 'inline-block';
+        logoutBtn.style.display = 'none';
+        
+        // Deshabilitar funciones
+        disableAppFunctions();
+    }
+}
+
+function enableAppFunctions() {
+    // Habilitar inputs y botones
+    if (newTaskInput) newTaskInput.disabled = false;
+    if (addTaskBtn) addTaskBtn.disabled = false;
+    if (newBoardInput) newBoardInput.disabled = false;
+    if (addBoardBtn) addBoardBtn.disabled = false;
+    
+    // Habilitar tableros existentes
+    const boardItems = document.querySelectorAll('.board-item');
+    boardItems.forEach(item => {
+        if (!item.querySelector('input')) {
+            item.style.cursor = 'pointer';
+            item.style.opacity = '1';
+        }
+    });
+    
+    console.log('✅ Funciones habilitadas');
+}
+
+function disableAppFunctions() {
+    // Deshabilitar inputs y botones
+    if (newTaskInput) newTaskInput.disabled = true;
+    if (addTaskBtn) addTaskBtn.disabled = true;
+    if (newBoardInput) newBoardInput.disabled = true;
+    if (addBoardBtn) addBoardBtn.disabled = true;
+    
+    // Deshabilitar tableros existentes
+    const boardItems = document.querySelectorAll('.board-item');
+    boardItems.forEach(item => {
+        if (!item.querySelector('input')) {
+            item.style.cursor = 'not-allowed';
+            item.style.opacity = '0.5';
+        }
+    });
+    
+    console.log('❌ Funciones deshabilitadas - Inicia sesión para usar la aplicación');
+}
+
+function showLoginMessage() {
+    // No necesitamos cambiar el contenido, solo deshabilitar funciones
+    console.log('🔒 Aplicación bloqueada - Inicia sesión para usar las funciones');
+}
+
+async function signInWithGoogle() {
+    try {
+        console.log('🔐 Iniciando sesión con Google...');
+        
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        
+        const result = await auth.signInWithPopup(provider);
+        console.log('✅ Sesión iniciada exitosamente:', result.user);
+        
+    } catch (error) {
+        console.error('❌ Error al iniciar sesión:', error);
+        alert('Error al iniciar sesión: ' + error.message);
+    }
+}
+
+async function signOut() {
+    try {
+        console.log('🔐 Cerrando sesión...');
+        await auth.signOut();
+        
+        // Limpiar datos del usuario
+        clearUserData();
+        
+        console.log('✅ Sesión cerrada exitosamente');
+        
+    } catch (error) {
+        console.error('❌ Error al cerrar sesión:', error);
+        alert('Error al cerrar sesión: ' + error.message);
+    }
+}
+
+function clearUserData() {
+    // Limpiar variables globales
+    currentUser = null;
+    boards = [];
+    tasks = [];
+    currentBoard = null;
+    
+    // Limpiar la UI
+    renderBoards();
+    renderTasks();
+    
+    console.log('🧹 Datos del usuario limpiados');
 }
 
 // Inicializar la aplicación
