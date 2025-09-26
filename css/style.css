@@ -1,0 +1,304 @@
+/* Estilos para el clon de Monday.com */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+.container-fluid {
+    height: 100vh;
+    padding: 0;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: #ffffff;
+    border-right: 1px solid #e9ecef;
+    padding: 20px;
+    height: 100vh;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.rocket-icon {
+    font-size: 24px;
+    color: #ff4757;
+}
+
+.sidebar h2 {
+    color: #333;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.clipboard-icon {
+    font-size: 16px;
+    color: #666;
+}
+
+.sidebar h5 {
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.board-item {
+    padding: 6px 10px;
+    margin-bottom: 2px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.85rem;
+}
+
+.board-item:hover {
+    background-color: #f1f2f6;
+}
+
+.board-item.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.board-item span {
+    font-size: 0.8rem;
+}
+
+/* Contenido Principal */
+.main-content {
+    padding: 40px;
+    background-color: #ffffff;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.main-title {
+    color: #333;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.board-header h3 {
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.document-icon {
+    font-size: 16px;
+    color: #666;
+}
+
+/* Secciones de Tareas */
+.task-section {
+    margin-bottom: 20px;
+}
+
+.task-section h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.task-section h5.text-danger {
+    border-bottom-color: #dc3545;
+    color: #dc3545;
+}
+
+.task-section h5.text-success {
+    border-bottom-color: #28a745;
+    color: #28a745;
+}
+
+/* Lista de Tareas */
+.task-list {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    min-height: 50px;
+}
+
+.task-item {
+    background-color: white;
+    padding: 12px 15px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.task-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.task-item:last-child {
+    margin-bottom: 0;
+}
+
+.task-item.completed {
+    opacity: 0.7;
+}
+
+.task-item.completed span {
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+/* Formularios */
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 16px;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    outline: none;
+}
+
+/* Botones */
+.btn {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 20px;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #1e7e34;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+}
+
+.btn-sm {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* Checkbox personalizado */
+.form-check-input {
+    width: 16px;
+    height: 16px;
+    margin-top: 0;
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .main-content {
+        height: auto;
+        min-height: calc(100vh - 200px);
+    }
+    
+    .container-fluid {
+        height: auto;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.task-item {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Estados vacíos */
+.task-list:empty::before {
+    content: "No hay tareas en esta sección";
+    color: #6c757d;
+    font-style: italic;
+    display: block;
+    text-align: center;
+    padding: 30px;
+    font-size: 0.9rem;
+}
+
+/* Mejoras adicionales para el diseño */
+.board-item {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.board-item span {
+    font-size: 0.9rem;
+}
+
+/* Espaciado mejorado */
+.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+.mt-2 {
+    margin-top: 0.75rem !important;
+}
